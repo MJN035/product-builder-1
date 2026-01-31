@@ -1,14 +1,122 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Hello World</title>
-  <link href='/style.css' rel='stylesheet'>
+  <meta charset="utf-8">
+  <title>Karaoke Key Master</title>
+  <style>
+    body {
+      background: #ECEFF1;
+      color: rgba(0, 0, 0, 0.87);
+      font-family: Roboto, Helvetica, Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+    }
+    #container {
+      background: white;
+      max-width: 600px;
+      margin: 40px auto;
+      padding: 30px;
+      border-radius: 5px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+    h1 {
+      text-align: center;
+      color: #ffa100;
+    }
+    #user-info, #song-input, #results, #recommendations {
+      margin-bottom: 20px;
+    }
+    label {
+      font-weight: bold;
+    }
+    input[type="text"] {
+      width: 70%;
+      padding: 8px;
+      border-radius: 3px;
+      border: 1px solid #ccc;
+    }
+    button {
+      padding: 10px 15px;
+      background: #039be5;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    #results, #recommendations {
+      border-top: 1px solid #eee;
+      padding-top: 20px;
+    }
+  </style>
 </head>
 <body>
-  <h1>Hello, world!</h1>
-  <button onclick="console.log('hello');">Press me</button>
-  <script defer type="text/javascript" src="/main.js"></script>
+  <div id="container">
+    <h1>Karaoke Key Master</h1>
+
+    <div id="user-info">
+      <h2>My Profile</h2>
+      <p><strong>Name:</strong> 서민준 (Min-jun)</p>
+      <p><strong>Max Chest Voice:</strong> G#4 (2옥타브 솔#)</p>
+    </div>
+
+    <div id="song-input">
+      <label for="song-title">Song Title:</label>
+      <input type="text" id="song-title" placeholder="Enter song title...">
+      <button onclick="analyzeSong()">Analyze</button>
+      <button onclick="getRecommendations()">Song Recommendation</button>
+    </div>
+
+    <div id="results"></div>
+    <div id="recommendations"></div>
+  </div>
+
+  <script>
+    const userMaxNote = 68; // G#4 MIDI note
+
+    function analyzeSong() {
+      const songTitle = document.getElementById('song-title').value;
+      // This is a placeholder for the actual song data retrieval
+      // In a real application, you would use a music API to get the song's highest note
+      const songData = {
+        title: songTitle,
+        artist: "Unknown",
+        maxNote: 72, // Example: C5, replace with actual data
+        source: "Estimated"
+      };
+
+      const adjustment = songData.maxNote - userMaxNote;
+      const resultText = `
+        🎤 <strong>${songData.title} - ${songData.artist}</strong> 분석 결과<br>
+        - <strong>곡 최고음:</strong> ${midiToNoteName(songData.maxNote)} (데이터 출처: ${songData.source})<br>
+        - <strong>민준님 최고음:</strong> G#4 (2옥타브 솔#)<br>
+        - <strong>결과:</strong> ${adjustment > 0 ? `🚨 ${adjustment}키 낮춤 (-${adjustment}) 필요` : `✅ 원키 가창 가능`}<br>
+        - <strong>Tip:</strong> 리모컨에서 '음정' 버튼을 ${adjustment}번 누르세요.
+      `;
+      document.getElementById('results').innerHTML = resultText;
+    }
+
+    function getRecommendations() {
+      // Placeholder for song recommendations
+      const recommendedSongs = [
+        { title: "Song A", artist: "Artist 1", maxNote: 65 },
+        { title: "Song B", artist: "Artist 2", maxNote: 67 },
+        { title: "Song C", artist: "Artist 3", maxNote: 68 },
+      ];
+
+      let recommendationText = '<h3>Recommended Songs:</h3><ul>';
+      recommendedSongs.forEach(song => {
+        recommendationText += `<li>${song.title} - ${song.artist} (Peak Note: ${midiToNoteName(song.maxNote)})</li>`;
+      });
+      recommendationText += '</ul>';
+      document.getElementById('recommendations').innerHTML = recommendationText;
+    }
+
+    function midiToNoteName(midi) {
+      const noteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+      const octave = Math.floor(midi / 12) - 1;
+      const noteIndex = midi % 12;
+      return `${noteNames[noteIndex]}${octave}`;
+    }
+  </script>
 </body>
 </html>
