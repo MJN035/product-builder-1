@@ -37,7 +37,7 @@ app.get('/api/song-info', async (req, res) => {
 
   } catch (error) {
     console.error(error);
-    res.status(500).send({ error: 'Failed to get song info from Gemini API.' });
+    res.status(500).send({ error: `Failed to get song info from Gemini API: ${error.message}` });
   }
 });
 
