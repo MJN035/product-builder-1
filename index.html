@@ -33,6 +33,20 @@
       color: var(--text-dark);
     }
 
+    nav {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    nav a {
+      margin: 0 15px;
+      color: var(--text-light);
+      text-decoration: none;
+      font-weight: 600;
+    }
+    body.dark-mode nav a {
+      color: var(--text-dark);
+    }
+
     #container {
       background: var(--container-bg-light);
       max-width: 600px;
@@ -153,11 +167,30 @@
     }
     body.dark-mode #theme-toggle::after {
         content: '🌙';
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 40px;
+      font-size: 0.9em;
+      color: #888;
+    }
+    footer a {
+      color: #888;
+      text-decoration: none;
+    }
+  </style>
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7627750541338420"
      crossorigin="anonymous"></script>
 </head>
 <body>
   <button id="theme-toggle"></button>
+  <nav>
+    <a href="index.html">Home</a>
+    <a href="about.html">About</a>
+    <a href="contact.html">Contact</a>
+    <a href="privacy.html">Privacy Policy</a>
+  </nav>
   <div id="container">
     <h1>Karaoke Key Master</h1>
     <div class="ad-unit" style="text-align:center; margin-bottom: 20px;">
@@ -171,6 +204,10 @@
              (adsbygoogle = window.adsbygoogle || []).push({});
         </script>
     </div>
+
+    <p>Welcome to Karaoke Key Master, your personal assistant for finding the perfect song for your voice. Stop guessing and start singing with confidence!</p>
+    <p>This tool analyzes the highest note of any song and compares it to your vocal range. We'll tell you if you can hit the high notes, or if you should adjust the key to avoid straining your voice.</p>
+
 
     <div id="user-info">
       <h2>My Profile</h2>
@@ -190,24 +227,6 @@
 
     <div id="results"></div>
     <div id="recommendations"></div>
-
-    <hr>
-
-    <div id="partnership-inquiry">
-      <h2>제휴 문의</h2>
-      <form action="https://formspree.io/f/xbdajogy" method="POST">
-        <label for="name">이름:</label>
-        <input type="text" id="name" name="name" required><br><br>
-        
-        <label for="email">이메일:</label>
-        <input type="email" id="email" name="_replyto" required><br><br>
-        
-        <label for="message">문의 내용:</label>
-        <textarea id="message" name="message" rows="5" required></textarea><br><br>
-        
-        <button type="submit">문의 제출</button>
-      </form>
-    </div>
 
     <hr>
 
@@ -231,6 +250,14 @@
 </script>
 <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
   </div>
+
+  <footer>
+    <a href="index.html">Home</a> |
+    <a href="about.html">About</a> |
+    <a href="contact.html">Contact</a> |
+    <a href="privacy.html">Privacy Policy</a>
+    <p>&copy; 2024 Karaoke Key Master</p>
+  </footer>
 
   <script>
     const userMaxNote = 68; // G#4 MIDI note
