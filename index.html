@@ -4,85 +4,161 @@
   <meta charset="utf-8">
   <title>Karaoke Key Master</title>
   <style>
+    :root {
+      --bg-light: #f5f5f7;
+      --bg-dark: #1d1d1f;
+      --container-bg-light: #ffffff;
+      --container-bg-dark: #2c2c2e;
+      --text-light: #1d1d1f;
+      --text-dark: #f5f5f7;
+      --accent-color: #ffa100;
+      --border-light: #d2d2d7;
+      --border-dark: #424245;
+    }
+
     body {
-      background: #ECEFF1;
-      color: rgba(0, 0, 0, 0.87);
-      font-family: Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg-light);
+      color: var(--text-light);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       margin: 0;
-      padding: 20px;
+      padding: 40px 20px;
       transition: background-color 0.3s, color 0.3s;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
+
     body.dark-mode {
-      background: #121212;
-      color: #ffffff;
+      background: var(--bg-dark);
+      color: var(--text-dark);
     }
+
     #container {
-      background: white;
+      background: var(--container-bg-light);
       max-width: 600px;
       margin: 40px auto;
-      padding: 30px;
-      border-radius: 5px;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      padding: 40px;
+      border-radius: 18px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      transition: background-color 0.3s, box-shadow 0.3s;
     }
+
     body.dark-mode #container {
-        background: #1e1e1e;
-        box-shadow: 0 2px 5px rgba(255, 255, 255, 0.1);
+        background: var(--container-bg-dark);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
     }
+
     h1 {
       text-align: center;
-      color: #ffa100;
+      color: var(--accent-color);
+      font-size: 2.5em;
+      margin-bottom: 30px;
     }
-    #user-info, #song-input, #results, #recommendations {
-      margin-bottom: 20px;
+    
+    h2 {
+        font-size: 1.5em;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid var(--border-light);
     }
+    body.dark-mode h2 {
+        border-bottom-color: var(--border-dark);
+    }
+
+
+    #user-info, #song-input, #results, #recommendations, #partnership-inquiry {
+      margin-bottom: 30px;
+    }
+
     label {
-      font-weight: bold;
+      font-weight: 600;
+      display: block;
+      margin-bottom: 8px;
     }
-    input[type="text"] {
-      width: 70%;
-      padding: 8px;
-      border-radius: 3px;
-      border: 1px solid #ccc;
+
+    input[type="text"],
+    input[type="email"],
+    textarea {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border-light);
+      background-color: var(--bg-light);
+      color: var(--text-light);
+      box-sizing: border-box;
+      transition: background-color 0.3s, border-color 0.3s;
     }
-    body.dark-mode input[type="text"] {
-        background-color: #333;
-        color: #fff;
-        border: 1px solid #555;
+
+    body.dark-mode input[type="text"],
+    body.dark-mode input[type="email"],
+    body.dark-mode textarea {
+        background-color: var(--bg-dark);
+        color: var(--text-dark);
+        border: 1px solid var(--border-dark);
     }
+    
+    input:focus, textarea:focus {
+        outline: none;
+        border-color: var(--accent-color);
+        box-shadow: 0 0 0 2px rgba(255, 161, 0, 0.3);
+    }
+
     button {
-      padding: 10px 15px;
-      background: #039be5;
-      color: white;
+      padding: 12px 20px;
+      background: var(--accent-color);
+      color: var(--bg-dark);
+      font-weight: 600;
       border: none;
-      border-radius: 4px;
+      border-radius: 8px;
       cursor: pointer;
+      transition: opacity 0.2s;
     }
+    
+    button:hover {
+        opacity: 0.85;
+    }
+    
+    #song-input button {
+        background-color: #007aff;
+        color: white;
+    }
+
     #results, #recommendations {
-      border-top: 1px solid #eee;
       padding-top: 20px;
     }
-    body.dark-mode #results, body.dark-mode #recommendations {
-        border-top: 1px solid #333;
-    }
+
     #theme-toggle {
-        position: absolute;
+        position: fixed;
         top: 20px;
         right: 20px;
-        padding: 8px 12px;
-        background-color: #039be5;
-        color: white;
-        border: none;
-        border-radius: 4px;
+        padding: 8px;
+        background-color: transparent;
+        border: 1px solid var(--border-light);
+        border-radius: 50%;
         cursor: pointer;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
+    
     body.dark-mode #theme-toggle {
-        background-color: #ffa100;
-        color: #121212;
+        border-color: var(--border-dark);
     }
+    
+    /* Simple sun/moon icon for toggle */
+    #theme-toggle::after {
+        content: '☀️';
+        font-size: 18px;
+    }
+    body.dark-mode #theme-toggle::after {
+        content: '🌙';
+    }
+
   </style>
 </head>
 <body>
-  <button id="theme-toggle">Toggle Theme</button>
+  <button id="theme-toggle"></button>
   <div id="container">
     <h1>Karaoke Key Master</h1>
 
@@ -92,31 +168,38 @@
       <p><strong>Max Chest Voice:</strong> G#4 (2옥타브 솔#)</p>
     </div>
 
+    <hr>
+
     <div id="song-input">
+      <h2>Song Analyzer</h2>
       <label for="song-title">Song Title:</label>
-      <input type="text" id="song-title" placeholder="Enter song title...">
+      <input type="text" id="song-title" placeholder="Enter a song title...">
       <button onclick="analyzeSong()">Analyze</button>
-      <button onclick="getRecommendations()">Song Recommendation</button>
+      <button onclick="getRecommendations()">Get Recommendations</button>
     </div>
 
     <div id="results"></div>
     <div id="recommendations"></div>
 
+    <hr>
+
     <div id="partnership-inquiry">
       <h2>제휴 문의</h2>
       <form action="https://formspree.io/f/xbdajogy" method="POST">
-        <label for="name">이름:</label><br>
+        <label for="name">이름:</label>
         <input type="text" id="name" name="name" required><br><br>
         
-        <label for="email">이메일:</label><br>
+        <label for="email">이메일:</label>
         <input type="email" id="email" name="_replyto" required><br><br>
         
-        <label for="message">문의 내용:</label><br>
+        <label for="message">문의 내용:</label>
         <textarea id="message" name="message" rows="5" required></textarea><br><br>
         
         <button type="submit">문의 제출</button>
       </form>
     </div>
+
+    <hr>
 
     <div id="disqus_thread"></div>
 <script>
