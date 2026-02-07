@@ -1,11 +1,12 @@
 const express = require('express');
-const { GoogleGenerativeAI } = require('@google/genai');
+const { GoogleGenAI } = require('@google/genai');
+require('dotenv').config();
 
 const app = express();
 const port = 3000;
 
 // IMPORTANT: Make sure to set the GEMINI_API_KEY environment variable.
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const genAI = new GoogleGenAI(process.env.GEMINI_API_KEY);
 
 app.use(express.static('.'));
 
@@ -26,9 +27,9 @@ app.get('/api/song-info', async (req, res) => {
 
     // The response from Gemini might be a string like "72" or "The highest note is 72".
     // We need to parse this to get the MIDI number.
-    const midiNumber = parseInt(text.match(/\d+/)[0]);
-
-    if (!isNaN(midiNumber)) {
+    const midiNumberMatch = text.match(/\d+/);
+    if (midiNumberMatch) {
+        const midiNumber = parseInt(midiNumberMatch[0]);
         res.send({ title: songTitle, maxNote: midiNumber, source: 'Gemini API' });
     } else {
         res.status(500).send({ error: 'Could not parse the highest note from the Gemini API response.' });
