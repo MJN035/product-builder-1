@@ -10,6 +10,11 @@
       font-family: Roboto, Helvetica, Arial, sans-serif;
       margin: 0;
       padding: 20px;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    body.dark-mode {
+      background: #121212;
+      color: #ffffff;
     }
     #container {
       background: white;
@@ -18,6 +23,10 @@
       padding: 30px;
       border-radius: 5px;
       box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+    body.dark-mode #container {
+        background: #1e1e1e;
+        box-shadow: 0 2px 5px rgba(255, 255, 255, 0.1);
     }
     h1 {
       text-align: center;
@@ -35,6 +44,11 @@
       border-radius: 3px;
       border: 1px solid #ccc;
     }
+    body.dark-mode input[type="text"] {
+        background-color: #333;
+        color: #fff;
+        border: 1px solid #555;
+    }
     button {
       padding: 10px 15px;
       background: #039be5;
@@ -47,9 +61,28 @@
       border-top: 1px solid #eee;
       padding-top: 20px;
     }
+    body.dark-mode #results, body.dark-mode #recommendations {
+        border-top: 1px solid #333;
+    }
+    #theme-toggle {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        padding: 8px 12px;
+        background-color: #039be5;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    body.dark-mode #theme-toggle {
+        background-color: #ffa100;
+        color: #121212;
+    }
   </style>
 </head>
 <body>
+  <button id="theme-toggle">Toggle Theme</button>
   <div id="container">
     <h1>Karaoke Key Master</h1>
 
@@ -73,26 +106,32 @@
   <script>
     const userMaxNote = 68; // G#4 MIDI note
 
-    function analyzeSong() {
+    async function analyzeSong() {
       const songTitle = document.getElementById('song-title').value;
-      // This is a placeholder for the actual song data retrieval
-      // In a real application, you would use a music API to get the song's highest note
-      const songData = {
-        title: songTitle,
-        artist: "Unknown",
-        maxNote: 72, // Example: C5, replace with actual data
-        source: "Estimated"
-      };
+      const resultsDiv = document.getElementById('results');
+      resultsDiv.innerHTML = 'Analyzing...';
 
-      const adjustment = songData.maxNote - userMaxNote;
-      const resultText = `
-        🎤 <strong>${songData.title} - ${songData.artist}</strong> 분석 결과<br>
-        - <strong>곡 최고음:</strong> ${midiToNoteName(songData.maxNote)} (데이터 출처: ${songData.source})<br>
-        - <strong>민준님 최고음:</strong> G#4 (2옥타브 솔#)<br>
-        - <strong>결과:</strong> ${adjustment > 0 ? `🚨 ${adjustment}키 낮춤 (-${adjustment}) 필요` : `✅ 원키 가창 가능`}<br>
-        - <strong>Tip:</strong> 리모컨에서 '음정' 버튼을 ${adjustment}번 누르세요.
-      `;
-      document.getElementById('results').innerHTML = resultText;
+      try {
+        const response = await fetch(`/api/song-info?songTitle=${encodeURIComponent(songTitle)}`);
+        const songData = await response.json();
+
+        if (response.ok) {
+          const adjustment = songData.maxNote - userMaxNote;
+          const resultText = `
+            🎤 <strong>${songData.title}</strong> 분석 결과<br>
+            - <strong>곡 최고음:</strong> ${midiToNoteName(songData.maxNote)} (데이터 출처: ${songData.source})<br>
+            - <strong>민준님 최고음:</strong> G#4 (2옥타브 솔#)<br>
+            - <strong>결과:</strong> ${adjustment > 0 ? `🚨 ${adjustment}키 낮춤 (-${adjustment}) 필요` : `✅ 원키 가창 가능`}<br>
+            - <strong>Tip:</strong> 리모컨에서 '음정' 버튼을 ${adjustment}번 누르세요.
+          `;
+          resultsDiv.innerHTML = resultText;
+        } else {
+          resultsDiv.innerHTML = `Error: ${songData.error}`;
+        }
+      } catch (error) {
+        resultsDiv.innerHTML = 'An error occurred while analyzing the song.';
+        console.error(error);
+      }
     }
 
     function getRecommendations() {
@@ -116,6 +155,21 @@
       const octave = Math.floor(midi / 12) - 1;
       const noteIndex = midi % 12;
       return `${noteNames[noteIndex]}${octave}`;
+    }
+
+    const themeToggle = document.getElementById('theme-toggle');
+    const body = document.body;
+
+    themeToggle.addEventListener('click', () => {
+      body.classList.toggle('dark-mode');
+      const isDarkMode = body.classList.contains('dark-mode');
+      localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
+    });
+
+    // Load theme from localStorage
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+      body.classList.add('dark-mode');
     }
   </script>
 </body>
