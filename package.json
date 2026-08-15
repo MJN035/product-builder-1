@@ -1,10 +1,9 @@
 {
-  "name": "productbuildweek-1",
-  "version": "1.0.0",
-  "description": "",
-  "main": "main.js",
+  "name": "karaoke-key-master",
+  "version": "2.0.0",
+  "description": "내 음역대에 맞는 노래방 키를 찾아주는 앱 — 곡 최고음 분석, 마이크 음역대 측정, 맞춤 추천곡",
+  "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js"
   },
   "keywords": [],
