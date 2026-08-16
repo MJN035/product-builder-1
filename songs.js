@@ -2,7 +2,8 @@
 // maxMidi: 곡 최고음 MIDI 번호 (C4 = 60). 커뮤니티 수집 데이터로 ±1키(반음) 오차가 있을 수 있음.
 // falsetto: 최고음 구간이 원곡에서 가성으로 처리되는 곡이면 true
 // gender: 'M' 남성곡, 'F' 여성곡, 'G' 그룹/혼성
-window.SONG_DB = [
+// 브라우저(window.SONG_DB)와 Node(require) 양쪽에서 사용된다
+const SONG_DB = [
   // ── 남성 발라드 (클래식) ──
   { title: "옛사랑", artist: "이문세", gender: "M", tag: "발라드", maxMidi: 62, falsetto: false },
   { title: "광화문 연가", artist: "이문세", gender: "M", tag: "발라드", maxMidi: 62, falsetto: false },
@@ -236,3 +237,6 @@ window.SONG_DB = [
   { title: "Hype Boy", artist: "NewJeans", gender: "F", tag: "팝", maxMidi: 68, falsetto: false },
   { title: "Next Level", artist: "aespa", gender: "F", tag: "댄스", maxMidi: 69, falsetto: false },
 ];
+
+if (typeof window !== "undefined") window.SONG_DB = SONG_DB;
+if (typeof module !== "undefined" && module.exports !== undefined) module.exports = SONG_DB;
