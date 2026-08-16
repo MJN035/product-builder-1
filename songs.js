@@ -134,6 +134,8 @@ window.SONG_DB = [
   { title: "봄이 좋냐??", artist: "10CM", gender: "M", tag: "밴드", maxMidi: 69, falsetto: false },
   { title: "폰서트", artist: "10CM", gender: "M", tag: "밴드", maxMidi: 69, falsetto: false },
   { title: "흔들리는 꽃들 속에서 네 샴푸향이 느껴진거야", artist: "장범준", gender: "M", tag: "밴드", maxMidi: 66, falsetto: false },
+  { title: "잠이 오질 않네요", artist: "장범준", gender: "M", tag: "밴드", maxMidi: 69, falsetto: false },
+  { title: "노래방에서", artist: "장범준", gender: "M", tag: "밴드", maxMidi: 71, falsetto: false },
   { title: "벚꽃 엔딩", artist: "버스커 버스커", gender: "M", tag: "밴드", maxMidi: 66, falsetto: false },
 
   // ── 남성 R&B/힙합/팝 ──
