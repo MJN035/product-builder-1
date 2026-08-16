@@ -4,7 +4,8 @@
   "description": "내 음역대에 맞는 노래방 키를 찾아주는 앱 — 곡 최고음 분석, 마이크 음역대 측정, 맞춤 추천곡",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "node --test"
   },
   "keywords": [],
   "author": "",

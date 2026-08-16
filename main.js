@@ -219,7 +219,7 @@ function renderCandidates(songs, query, offerAI) {
         <div class="song-art" style="background:var(--tint)">${escapeHtml(s.title[0])}</div>
         <div class="song-meta">
           <div class="song-name">${escapeHtml(s.title)}</div>
-          <div class="song-artist">${escapeHtml(s.artist)} · 최고음 ${midiToKorean(s.maxMidi)}</div>
+          <div class="song-artist">${escapeHtml(s.artist)} · ${Number.isFinite(s.maxMidi) ? `최고음 ${midiToKorean(s.maxMidi)}` : '최고음 확인 중'}</div>
         </div>
         <span class="cell-value">›</span>
       </div>`;
@@ -262,8 +262,12 @@ async function analyzeWithAI(query) {
   if (res.ok && data.found) {
     renderAnalysis(
       { title: data.title, artist: data.artist || "-", maxMidi: data.highestNoteMidi,
-        falsetto: !!data.isFalsetto, tag: "AI 분석", gender: "?" },
-      data.confidence || "low"
+        falsetto: !!data.isFalsetto, tag: "AI 분석", gender: "?",
+        sources: data.sources || [], evidenceIterations: data.evidenceIterations || [],
+        evidenceConfidence: data.evidenceConfidence, rejectedClaims: data.rejectedClaims || [] },
+      data.verification === "verified" || data.verification === "corroborated"
+        ? data.verification
+        : data.verification || data.confidence || "low"
     );
     return;
   }
@@ -287,6 +291,9 @@ function showAIError(msg, query, retriable) {
 
 const CONFIDENCE_LABEL = {
   verified: { text: "검증된 데이터", color: "var(--green)" },
+  corroborated: { text: "독립 출처 교차확인", color: "var(--green)" },
+  provisional: { text: "웹 근거 부족 · 잠정값", color: "var(--orange)" },
+  unverified: { text: "직접 수치 근거 없음", color: "var(--red)" },
   high: { text: "AI 분석 · 신뢰도 높음", color: "var(--green)" },
   medium: { text: "AI 분석 · 신뢰도 보통", color: "var(--orange)" },
   low: { text: "AI 분석 · 참고용", color: "var(--red)" },
@@ -301,6 +308,13 @@ function renderAnalysis(song, confidence) {
     rec.keyChange === 0 ? "원키" :
     rec.octaveDown ? "옥타브 ↓" :
     `${rec.keyChange}키`;
+  const evidenceHtml = song.sources?.length ? `
+    <div class="section-header">최고음 근거</div>
+    <div class="card card-pad">
+      <div class="text-sm">조사 루프 ${song.evidenceIterations?.length || 0}회 · 합의 신뢰도 ${Math.round((song.evidenceConfidence || 0) * 100)}%</div>
+      ${song.sources.map((source) => `<div class="text-sm mt-8"><a href="${escapeHtml(source.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(source.title || source.host || source.url)}</a></div>`).join("")}
+      ${song.rejectedClaims?.length ? `<div class="text-sm text-secondary mt-8">이상치 ${song.rejectedClaims.length}건 제외</div>` : ""}
+    </div>` : "";
 
   const resultsEl = document.getElementById("analyze-results");
   resultsEl.innerHTML = `
@@ -346,6 +360,7 @@ function renderAnalysis(song, confidence) {
         <span><span class="dot" style="background:var(--pink)"></span>곡 최고음</span>
       </div>
     </div>
+    ${evidenceHtml}
     ${confidence !== "verified" ? `<p class="section-footer">AI 분석 결과는 실제와 다를 수 있어요. 검증된 곡은 추천 탭에서 확인하세요.</p>` : ""}
   `;
   // 좁은 화면에서 곡 최고음 건반이 보이도록 피아노를 오른쪽 끝까지 스크롤
@@ -395,11 +410,12 @@ let recFilter = "fit"; // fit | all | challenge
 function renderRecommendations() {
   const listEl = document.getElementById("rec-list");
   const chest = profile.chestMax;
-  const songs = [...window.SONG_DB].sort((a, b) => a.maxMidi - b.maxMidi);
+  const songs = [...window.SONG_DB].sort((a, b) =>
+    (Number.isFinite(a.maxMidi) ? a.maxMidi : Infinity) - (Number.isFinite(b.maxMidi) ? b.maxMidi : Infinity));
 
   let filtered;
-  if (recFilter === "fit") filtered = songs.filter((s) => s.maxMidi <= chest);
-  else if (recFilter === "challenge") filtered = songs.filter((s) => s.maxMidi > chest && s.maxMidi <= chest + 4);
+  if (recFilter === "fit") filtered = songs.filter((s) => Number.isFinite(s.maxMidi) && s.maxMidi <= chest);
+  else if (recFilter === "challenge") filtered = songs.filter((s) => Number.isFinite(s.maxMidi) && s.maxMidi > chest && s.maxMidi <= chest + 4);
   else if (recFilter === "fav") filtered = songs.filter((s) => s.favorite);
   else filtered = songs;
 
@@ -413,7 +429,9 @@ function renderRecommendations() {
   filtered.forEach((s, i) => {
     const diff = s.maxMidi - chest;
     let badge;
-    if (recFilter === "fav" && s.myKey !== undefined) {
+    if (!Number.isFinite(s.maxMidi)) {
+      badge = `<span class="song-badge warn">키 미등록</span>`;
+    } else if (recFilter === "fav" && s.myKey !== undefined) {
       // 애창곡 보기: 사용자가 실제로 부르는 키를 표시
       badge = s.myKey === 0
         ? `<span class="song-badge ok">내 키: 원키</span>`
@@ -430,7 +448,7 @@ function renderRecommendations() {
         <div class="song-art" style="background:${color}">${escapeHtml(s.title[0])}</div>
         <div class="song-meta">
           <div class="song-name">${escapeHtml(s.title)}</div>
-          <div class="song-artist">${escapeHtml(s.artist)} · 최고음 ${midiToKorean(s.maxMidi)}</div>
+          <div class="song-artist">${escapeHtml(s.artist)} · ${Number.isFinite(s.maxMidi) ? `최고음 ${midiToKorean(s.maxMidi)}` : '최고음 확인 중'}</div>
         </div>
         ${badge}
       </div>`;
@@ -443,7 +461,8 @@ function analyzeFromList(idx) {
   const s = window.SONG_DB[idx];
   switchTab("analyze");
   document.getElementById("song-query").value = `${s.artist} ${s.title}`;
-  renderAnalysis(s, "verified");
+  if (Number.isFinite(s.maxMidi)) renderAnalysis(s, "verified");
+  else analyzeWithAI(`${s.artist} ${s.title}`);
 }
 
 /* ──────────────────────────────

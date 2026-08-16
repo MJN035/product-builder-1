@@ -3,12 +3,14 @@
 const { createMcpHandler } = require('mcp-handler');
 const { z } = require('zod');
 const SONG_DB = require('../songs.js');
-const { midiToFull, midiToKorean, parseNote, searchDB, recommendKey } = require('../lib/karaoke-logic.js');
+const {
+  midiToFull, midiToKorean, parseNote, searchDB, recommendKey, recommendNewSongs,
+} = require('../lib/karaoke-logic.js');
 const { analyzeSongTitle } = require('../lib/gemini-song.js');
 
 function songLine(s) {
-  return `${s.title} — ${s.artist} · 최고음 ${midiToFull(s.maxMidi)}` +
-    `${s.falsetto ? ' (클라이맥스 가성)' : ''}${s.tag ? ` [${s.tag}]` : ''}`;
+  return `${s.title} — ${s.artist} · ${Number.isFinite(s.maxMidi) ? `최고음 ${midiToFull(s.maxMidi)}` : '최고음 확인 중'}` +
+    `${s.falsetto ? ' (클라이맥스 가성)' : ''}${s.rangeSource ? ` (${s.rangeSource})` : ''}${s.tag ? ` [${s.tag}]` : ''}`;
 }
 function text(t) {
   return { content: [{ type: 'text', text: t }] };
@@ -21,7 +23,7 @@ const handler = createMcpHandler(
       'search_songs',
       {
         title: '노래방 곡 검색',
-        description: '검증된 노래방 곡 데이터베이스(163곡, 최고음 포함)에서 곡을 검색한다. 곡명·가수명 모두 가능.',
+        description: `검증된 노래방 곡 데이터베이스(${SONG_DB.length}곡, 최고음 포함)에서 곡을 검색한다. 곡명·가수명 모두 가능.`,
         inputSchema: z.object({ query: z.string().describe('곡 제목 또는 가수 이름') }),
       },
       async ({ query }) => {
@@ -47,7 +49,7 @@ const handler = createMcpHandler(
       async ({ title, chest_max, falsetto_max }) => {
         let song, sourceNote;
         const hits = searchDB(SONG_DB, title);
-        const strong = hits.filter((h) => h.score >= 90);
+        const strong = hits.filter((h) => h.score >= 90 && Number.isFinite(h.song.maxMidi));
 
         if (strong.length === 1) {
           song = strong[0].song;
@@ -63,8 +65,13 @@ const handler = createMcpHandler(
           song = {
             title: r.body.title, artist: r.body.artist, maxMidi: r.body.highestNoteMidi,
             falsetto: r.body.isFalsetto, falsettoMidi: r.body.falsettoNoteMidi,
+            rangeSource: r.body.verification,
           };
-          sourceNote = `AI 분석 (${r.body.source}, 신뢰도 ${r.body.confidence})`;
+          const sourceLinks = (r.body.sources || []).slice(0, 4)
+            .map((source) => `- ${source.title}: ${source.url}`)
+            .join('\n');
+          sourceNote = `AI 분석 (${r.body.source}, 신뢰도 ${r.body.confidence}, 검증 ${r.body.verification || 'unverified'})` +
+            (sourceLinks ? `\n근거 출처:\n${sourceLinks}` : '\n직접 확인 가능한 웹 근거 없음');
         }
 
         let out = `${song.title} — ${song.artist}\n진성 최고음: ${midiToFull(song.maxMidi)}` +
@@ -138,6 +145,52 @@ const handler = createMcpHandler(
     );
 
     server.registerTool(
+      'recommend_new_songs',
+      {
+        title: '애창곡 기반 새 노래 추천',
+        description: '등록된 애창곡과 실제로 부르는 키를 분석해 취향·편안한 음역대가 비슷한 새 노래와 시작 키를 추천한다. 기준곡이나 원하는 분위기를 함께 지정할 수 있다.',
+        inputSchema: z.object({
+          reference_song: z.string().optional().describe('닮은 곡을 찾을 기준곡. 예: "적재 그리워"'),
+          mood: z.string().optional().describe('원하는 분위기나 장르. 예: "어쿠스틱", "R&B", "잔잔한 발라드"'),
+          limit: z.number().int().min(1).max(15).optional().describe('추천 곡 수 (기본 8, 최대 15)'),
+        }),
+      },
+      async ({ reference_song, mood, limit }) => {
+        const result = recommendNewSongs(SONG_DB, {
+          referenceSong: reference_song,
+          mood,
+          limit,
+        });
+        if (!result.profile) return text('애창곡과 실제 가창 키를 먼저 등록해 주세요.');
+
+        const { profile } = result;
+        const tags = Object.entries(profile.tagCounts)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 3)
+          .map(([tag]) => tag)
+          .join(' · ');
+        const referenceNote = reference_song
+          ? result.reference
+            ? `기준곡: ${result.reference.title} — ${result.reference.artist}\n`
+            : result.referenceArtist
+              ? `기준곡 "${reference_song}"은 DB에 없어 ${result.referenceArtist}의 다른 곡과 취향 프로필을 중심으로 추천했습니다.\n`
+              : `기준곡 "${reference_song}"은 DB에 없어 음역대·취향 프로필 중심으로 추천했습니다.\n`
+          : '';
+        const lines = result.songs.map(({ song, keyChange, adjustedMax }, index) => {
+          const key = keyChange === 0 ? '원키부터 시도' : `${Math.abs(keyChange)}키 낮춰 시작`;
+          return `${index + 1}. ${song.title} — ${song.artist} [${song.tag}]\n` +
+            `   ${key} · 조절 후 최고음 ${midiToFull(adjustedMax)}`;
+        });
+
+        return text(
+          `애창곡 ${profile.favorites.length}곡 분석\n` +
+          `편안한 최고음: ${midiToFull(profile.comfortableMax)} · 확인된 최고음: ${midiToFull(profile.demonstratedMax)}\n` +
+          `선호 스타일: ${tags}\n${referenceNote}\n${lines.join('\n')}`
+        );
+      }
+    );
+
+    server.registerTool(
       'list_favorites',
       {
         title: '애창곡 목록',
@@ -147,7 +200,11 @@ const handler = createMcpHandler(
       async () => {
         const favs = SONG_DB.filter((s) => s.favorite);
         if (favs.length === 0) return text('등록된 애창곡이 없습니다.');
-        return text(favs.map((s) => `${songLine(s)} · 내 키: ${s.myKey === 0 ? '원키' : s.myKey}`).join('\n'));
+        return text(favs.map((s) => {
+          const sources = (s.rangeSources || []).map((url) => `\n  출처: ${url}`).join('');
+          const myKey = s.myKey === undefined ? '미등록' : s.myKey === 0 ? '원키' : s.myKey;
+          return `${songLine(s)} · 내 키: ${myKey}${sources}`;
+        }).join('\n'));
       }
     );
   },

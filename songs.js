@@ -1,4 +1,4 @@
-// 노래방 인기곡 최고음 데이터베이스 (약 150곡)
+// 노래방 인기곡 최고음 데이터베이스
 // maxMidi: 곡 최고음 MIDI 번호 (C4 = 60). 커뮤니티 수집 데이터로 ±1키(반음) 오차가 있을 수 있음.
 // falsetto: 최고음 구간이 원곡에서 가성으로 처리되는 곡이면 true
 // gender: 'M' 남성곡, 'F' 여성곡, 'G' 그룹/혼성
@@ -145,6 +145,8 @@ const SONG_DB = [
   { title: "짝사랑", artist: "10CM", gender: "M", tag: "밴드", maxMidi: 69, falsetto: false, favorite: true, myKey: -3 },
   { title: "사랑으로", artist: "wave to earth", gender: "M", tag: "밴드", maxMidi: 66, falsetto: false, favorite: true, myKey: -1 },
   { title: "사랑이 아니라 말하지 말아요", artist: "김동률", gender: "M", tag: "발라드", maxMidi: 66, falsetto: false, favorite: true, myKey: -1 },
+  { title: "그리워", artist: "적재", gender: "M", tag: "어쿠스틱", maxMidi: 69, falsetto: false, favorite: true, myKey: -4, rangeSource: "AI 악보 판독(잠정)", rangeSources: ["https://www.akbobada.com/musicDetail.html?musicID=93890", "https://youtu.be/1aLEdlwfARQ"] },
+  { title: "나랑 같이 걸을래", artist: "적재", gender: "M", tag: "어쿠스틱", maxMidi: 68, falsetto: false, favorite: true, myKey: -3, rangeSource: "AI 악보 판독(잠정)", rangeSources: ["https://www.musicscore.co.kr/m_score/score_detail.asp?s_rndidx=3SlHrBSoRVDV2020102694800", "https://www.mymusic5.com/ko/coverskills/21915"] },
   { title: "벚꽃 엔딩", artist: "버스커 버스커", gender: "M", tag: "밴드", maxMidi: 66, falsetto: false },
 
   // ── 남성 R&B/힙합/팝 ──
