@@ -1,0 +1,8 @@
+node_modules
+.omc
+.git
+.idx
+.vscode
+firebase.json
+.firebaserc
+server.js
