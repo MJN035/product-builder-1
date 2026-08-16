@@ -39,7 +39,7 @@ const handler = createMcpHandler(
       'analyze_song',
       {
         title: '곡 최고음 분석 + 키 추천',
-        description: '곡의 최고음을 분석하고, 사용자 음역대가 주어지면 노래방 키 조절까지 추천한다. 검증된 DB 우선, 없으면 AI(3회 교차검증) 분석.',
+        description: '곡의 최고음을 분석하고, 사용자 음역대가 주어지면 노래방 키 조절까지 추천한다. 검증된 DB 우선, 없으면 AI 표본 3회와 웹 근거 검증 6~8회를 결합한다.',
         inputSchema: z.object({
           title: z.string().describe('곡 제목 (가수 이름을 함께 쓰면 정확도가 올라감)'),
           chest_max: z.string().optional().describe(`사용자 진성 최고음. ${NOTE_DESC}`),
