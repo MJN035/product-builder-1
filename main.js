@@ -400,6 +400,7 @@ function renderRecommendations() {
   let filtered;
   if (recFilter === "fit") filtered = songs.filter((s) => s.maxMidi <= chest);
   else if (recFilter === "challenge") filtered = songs.filter((s) => s.maxMidi > chest && s.maxMidi <= chest + 4);
+  else if (recFilter === "fav") filtered = songs.filter((s) => s.favorite);
   else filtered = songs;
 
   if (filtered.length === 0) {
@@ -411,10 +412,18 @@ function renderRecommendations() {
   let html = `<div class="card">`;
   filtered.forEach((s, i) => {
     const diff = s.maxMidi - chest;
-    const badge =
-      diff <= 0 ? `<span class="song-badge ok">원키 OK</span>` :
-      diff <= 4 ? `<span class="song-badge warn">-${diff}키</span>` :
-      `<span class="song-badge danger">-${diff}키</span>`;
+    let badge;
+    if (recFilter === "fav" && s.myKey !== undefined) {
+      // 애창곡 보기: 사용자가 실제로 부르는 키를 표시
+      badge = s.myKey === 0
+        ? `<span class="song-badge ok">내 키: 원키</span>`
+        : `<span class="song-badge warn">내 키: ${s.myKey}</span>`;
+    } else {
+      badge =
+        diff <= 0 ? `<span class="song-badge ok">원키 OK</span>` :
+        diff <= 4 ? `<span class="song-badge warn">-${diff}키</span>` :
+        `<span class="song-badge danger">-${diff}키</span>`;
+    }
     const color = ART_COLORS[(s.artist.charCodeAt(0) + i) % ART_COLORS.length];
     html += `
       <div class="song-row" onclick="analyzeFromList(${window.SONG_DB.indexOf(s)})">
