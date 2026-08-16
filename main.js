@@ -261,6 +261,9 @@ function renderAnalysis(song, confidence) {
     </div>
     ${confidence !== "verified" ? `<p class="section-footer">AI 분석 결과는 실제와 다를 수 있어요. 검증된 곡은 추천 탭에서 확인하세요.</p>` : ""}
   `;
+  // 좁은 화면에서 곡 최고음 건반이 보이도록 피아노를 오른쪽 끝까지 스크롤
+  const pw = resultsEl.querySelector(".piano-wrap");
+  if (pw) pw.scrollLeft = pw.scrollWidth;
   resultsEl.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
@@ -589,4 +592,8 @@ document.addEventListener("DOMContentLoaded", () => {
   window.addEventListener("scroll", () => {
     document.body.classList.toggle("scrolled", window.scrollY > 40);
   });
+
+  // 공유 링크: ?q=곡명 으로 접속하면 자동 분석
+  const q = new URLSearchParams(location.search).get("q");
+  if (q) analyzeSong(q);
 });

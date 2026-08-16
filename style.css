@@ -62,6 +62,7 @@ html, body { margin: 0; padding: 0; }
 body {
   background: var(--bg);
   color: var(--label);
+  overflow-x: hidden;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
     "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", Roboto, sans-serif;
   font-size: 17px;
@@ -495,6 +496,13 @@ select.field { appearance: none; -webkit-appearance: none; }
   padding: 30px 0 12px;
 }
 .app-footer a { color: var(--label-secondary); text-decoration: none; margin: 0 6px; }
+
+/* ── AdSense 광고 안전장치 ──
+   광고 iframe이 고정 폭을 지정해도 화면을 넘지 않게 하고,
+   채워지지 않은(unfilled) 광고는 빈 공간을 차지하지 않게 숨김 */
+.ad-unit { overflow-x: hidden; max-width: 100%; }
+.ad-unit ins.adsbygoogle { max-width: 100%; }
+ins.adsbygoogle[data-ad-status="unfilled"] { display: none !important; }
 
 /* ── Utility ── */
 .mt-8 { margin-top: 8px; }
