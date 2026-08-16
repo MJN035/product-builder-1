@@ -242,33 +242,47 @@ async function analyzeWithAI(query) {
       <div class="spinner"></div>
       <p class="text-secondary text-sm mt-12">DB에 없는 곡이라 AI로 분석 중…<br>결과는 참고용이에요.</p>
     </div>`;
+
+  // HTTP 상태 기반으로 실패 사유를 구분한다 (문자열 매칭 금지)
+  let res;
   try {
-    const res = await fetch(`${API_BASE}/api/song-info?songTitle=${encodeURIComponent(query)}`);
-    const ct = res.headers.get("content-type") || "";
-    if (!ct.includes("json")) {
-      throw new Error("AI 분석 서버가 아직 연결되지 않았어요. 검증된 곡 데이터베이스에서 검색하거나 추천 탭을 이용해 주세요.");
-    }
-    const data = await res.json();
-    if (!res.ok || !data.found) throw new Error(data.error || "곡 정보를 찾지 못했어요.");
+    res = await fetch(`${API_BASE}/api/song-info?songTitle=${encodeURIComponent(query)}`);
+  } catch (e) {
+    showAIError("네트워크 문제로 AI 분석 서버에 닿지 못했어요. 연결을 확인하고 다시 시도해 주세요.", query, true);
+    return;
+  }
+
+  const ct = res.headers.get("content-type") || "";
+  if (!ct.includes("json")) {
+    showAIError("AI 분석 서버가 아직 연결되지 않은 환경이에요. 검증된 곡 DB 검색과 추천 탭은 그대로 이용할 수 있어요.", query, false);
+    return;
+  }
+
+  const data = await res.json();
+  if (res.ok && data.found) {
     renderAnalysis(
       { title: data.title, artist: data.artist || "-", maxMidi: data.highestNoteMidi,
         falsetto: !!data.isFalsetto, tag: "AI 분석", gender: "?" },
       data.confidence || "low"
     );
-  } catch (err) {
-    const known = err.message.startsWith("AI 분석 서버") || err.message.includes("찾지 못") || err.message.includes("몰렸");
-    const msg = known ? err.message : "AI 분석 서버 응답이 잠시 불안정해요. 아래 버튼으로 다시 시도해 주세요.";
-    // "AI가 모르는 곡" 같은 확정 실패가 아니면 재시도 버튼 제공
-    const retriable = !err.message.includes("찾지 못") && !err.message.startsWith("AI 분석 서버가 아직");
-    resultsEl.innerHTML = `
-      <div class="verdict danger">
-        <div class="v-icon">😢</div>
-        <div><p class="v-title">이 곡은 아직 DB에 없어요</p>
-        <p class="v-sub">${escapeHtml(msg)}</p></div>
-      </div>
-      ${retriable ? `<button class="btn btn-secondary mt-12"
-        onclick="analyzeWithAI(${JSON.stringify(query).replace(/"/g, "&quot;")})">다시 시도</button>` : ""}`;
+    return;
   }
+
+  // 404/422 = AI가 확정적으로 모르는 곡 (재시도 무의미), 429/5xx = 일시 오류 (재시도 가능)
+  const retriable = res.status === 429 || res.status >= 500;
+  showAIError(data.error || "곡 정보를 찾지 못했어요.", query, retriable);
+}
+
+function showAIError(msg, query, retriable) {
+  const resultsEl = document.getElementById("analyze-results");
+  resultsEl.innerHTML = `
+    <div class="verdict danger">
+      <div class="v-icon">😢</div>
+      <div><p class="v-title">이 곡은 분석하지 못했어요</p>
+      <p class="v-sub">${escapeHtml(msg)}${retriable ? "" : "<br>가수 이름과 함께 검색하면(예: “김광진 편지”) 더 잘 찾아요."}</p></div>
+    </div>
+    ${retriable ? `<button class="btn btn-secondary mt-12"
+      onclick="analyzeWithAI(${JSON.stringify(query).replace(/"/g, "&quot;")})">다시 시도</button>` : ""}`;
 }
 
 const CONFIDENCE_LABEL = {
