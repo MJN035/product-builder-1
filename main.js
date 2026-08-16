@@ -680,7 +680,19 @@ document.addEventListener("DOMContentLoaded", () => {
     document.body.classList.toggle("scrolled", window.scrollY > 40);
   });
 
-  // 공유 링크: ?q=곡명 으로 접속하면 자동 분석
-  const q = new URLSearchParams(location.search).get("q");
+  // 공유 링크: ?q=곡명 자동 분석, ?chest=/&falsetto= (MIDI 번호)로 음역대 프리셋
+  const params = new URLSearchParams(location.search);
+  const chest = parseInt(params.get("chest"));
+  if (Number.isInteger(chest) && chest >= 48 && chest <= 84) {
+    profile.chestMax = chest;
+    const fal = parseInt(params.get("falsetto"));
+    profile.falsettoMax = Number.isInteger(fal) && fal >= chest && fal <= 90
+      ? fal
+      : Math.max(profile.falsettoMax, chest);
+    saveProfile();
+    syncProfilePickers();
+    renderRecommendations();
+  }
+  const q = params.get("q");
   if (q) analyzeSong(q);
 });

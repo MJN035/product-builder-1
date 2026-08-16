@@ -125,6 +125,7 @@ window.SONG_DB = [
   { title: "주저하는 연인들을 위해", artist: "잔나비", gender: "M", tag: "밴드", maxMidi: 68, falsetto: true },
   { title: "뜨거운 여름밤은 가고 남은 건 볼품없지만", artist: "잔나비", gender: "M", tag: "밴드", maxMidi: 69, falsetto: false },
   { title: "TOMBOY", artist: "혁오", gender: "M", tag: "밴드", maxMidi: 69, falsetto: false },
+  { title: "소녀 (오혁 ver.)", artist: "오혁", gender: "M", tag: "OST", maxMidi: 68, falsetto: true },
   { title: "위잉위잉", artist: "혁오", gender: "M", tag: "밴드", maxMidi: 68, falsetto: false },
   { title: "한 페이지가 될 수 있게", artist: "DAY6", gender: "M", tag: "밴드", maxMidi: 70, falsetto: false },
   { title: "예뻤어", artist: "DAY6", gender: "M", tag: "밴드", maxMidi: 71, falsetto: false },
