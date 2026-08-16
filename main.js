@@ -75,23 +75,41 @@ function normalize(s) {
   return s.toLowerCase().replace(/[\s'"“”‘’!?.,()\-]/g, "");
 }
 
+/* 점수 체계 (엄격한 순):
+   100 제목 완전 일치 / 가수+제목 완전 일치
+    95 검색어에 제목과 가수가 모두 포함 ("박효신 야생화")
+    72 검색어에 4자 이상 제목이 포함
+    70 제목이 검색어로 시작 (2자 이상)
+    65 제목에 검색어 포함 (2자 이상)
+    55 가수 완전 일치 (곡 목록 제시용)
+    45 가수에 검색어 포함 (2자 이상)
+   90 이상만 자동 분석, 그 미만은 후보 목록으로 제시 → 오매칭 방지 */
+function scoreSong(song, q) {
+  const t = normalize(song.title);
+  const a = normalize(song.artist);
+  if (t === q || a + t === q || t + a === q) return 100;
+  const hasTitle = t.length >= 2 && q.includes(t);
+  const hasArtist = a.length >= 2 && q.includes(a);
+  if (hasTitle && hasArtist) return 95;
+  if (hasTitle && t.length >= 4) return 72;
+  if (q.length >= 2 && t.startsWith(q)) return 70;
+  if (q.length >= 2 && t.includes(q)) return 65;
+  if (a === q) return 55;
+  if (q.length >= 2 && a.includes(q)) return 45;
+  return 0;
+}
+
+// [{song, score}] 를 점수순으로 반환
 function searchLocalDB(query) {
   const q = normalize(query);
   if (!q) return [];
   const scored = [];
   for (const song of window.SONG_DB) {
-    const t = normalize(song.title);
-    const a = normalize(song.artist);
-    let score = 0;
-    if (t === q || a + t === q || t + a === q) score = 100;
-    else if (t.startsWith(q) || q.startsWith(t)) score = 80;
-    else if (t.includes(q) || q.includes(t)) score = 60;
-    else if (a.includes(q)) score = 40;
-    else if ((a + t).includes(q) || (t + a).includes(q)) score = 30;
+    const score = scoreSong(song, q);
     if (score > 0) scored.push({ song, score });
   }
   scored.sort((x, y) => y.score - x.score);
-  return scored.map((s) => s.song);
+  return scored;
 }
 
 /* ──────────────────────────────
@@ -155,6 +173,11 @@ function recommendKey(songMax, chest, falsetto, songUsesFalsetto) {
    ────────────────────────────── */
 let lastAnalyzed = null;
 
+// GitHub Pages(정적)에서는 별도 API 서버로, 그 외(로컬/Vercel)는 같은 호스트로 요청
+const API_BASE = location.hostname.endsWith("github.io")
+  ? "https://karaoke-key-master.vercel.app"
+  : "";
+
 async function analyzeSong(queryOverride) {
   const input = document.getElementById("song-query");
   const query = (queryOverride || input.value).trim();
@@ -166,34 +189,81 @@ async function analyzeSong(queryOverride) {
   }
   if (queryOverride) input.value = queryOverride;
 
-  // 1단계: 로컬 DB (검증된 데이터)
-  const matches = searchLocalDB(query);
-  if (matches.length > 0) {
-    renderAnalysis(matches[0], "verified");
+  const scored = searchLocalDB(query);
+
+  // 확실한 매칭(90점 이상)이 정확히 하나일 때만 자동 분석
+  const strong = scored.filter((s) => s.score >= 90);
+  if (strong.length === 1) {
+    renderAnalysis(strong[0].song, "verified");
     return;
   }
+  if (strong.length > 1) {
+    renderCandidates(strong.map((s) => s.song), query, false);
+    return;
+  }
+  // 애매한 매칭 → 후보 목록으로 제시 (오매칭 방지)
+  if (scored.length > 0) {
+    renderCandidates(scored.slice(0, 6).map((s) => s.song), query, true);
+    return;
+  }
+  // DB에 전혀 없음 → AI 폴백
+  analyzeWithAI(query);
+}
 
-  // 2단계: AI 폴백
+function renderCandidates(songs, query, offerAI) {
+  const resultsEl = document.getElementById("analyze-results");
+  let html = `<div class="section-header">"${escapeHtml(query)}" — 이 곡을 찾으셨나요?</div><div class="card">`;
+  songs.forEach((s) => {
+    html += `
+      <div class="song-row" onclick="analyzeFromList(${window.SONG_DB.indexOf(s)})">
+        <div class="song-art" style="background:var(--tint)">${escapeHtml(s.title[0])}</div>
+        <div class="song-meta">
+          <div class="song-name">${escapeHtml(s.title)}</div>
+          <div class="song-artist">${escapeHtml(s.artist)} · 최고음 ${midiToKorean(s.maxMidi)}</div>
+        </div>
+        <span class="cell-value">›</span>
+      </div>`;
+  });
+  html += `</div>`;
+  if (offerAI) {
+    html += `
+      <button class="btn btn-secondary mt-12" onclick="analyzeWithAI(${JSON.stringify(query).replace(/"/g, "&quot;")})">
+        찾는 곡이 없어요 — AI로 분석하기
+      </button>`;
+  }
+  resultsEl.innerHTML = html;
+  resultsEl.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+async function analyzeWithAI(query) {
+  const resultsEl = document.getElementById("analyze-results");
   resultsEl.innerHTML = `
     <div class="card card-pad" style="text-align:center">
       <div class="spinner"></div>
       <p class="text-secondary text-sm mt-12">DB에 없는 곡이라 AI로 분석 중…<br>결과는 참고용이에요.</p>
     </div>`;
   try {
-    const res = await fetch(`/api/song-info?songTitle=${encodeURIComponent(query)}`);
+    const res = await fetch(`${API_BASE}/api/song-info?songTitle=${encodeURIComponent(query)}`);
+    const ct = res.headers.get("content-type") || "";
+    if (!ct.includes("json")) {
+      throw new Error("AI 분석 서버가 아직 연결되지 않았어요. 검증된 곡 데이터베이스에서 검색하거나 추천 탭을 이용해 주세요.");
+    }
     const data = await res.json();
     if (!res.ok || !data.found) throw new Error(data.error || "곡 정보를 찾지 못했어요.");
     renderAnalysis(
       { title: data.title, artist: data.artist || "-", maxMidi: data.highestNoteMidi,
-        falsetto: false, tag: "AI 분석", gender: "?" },
+        falsetto: !!data.isFalsetto, tag: "AI 분석", gender: "?" },
       data.confidence || "low"
     );
   } catch (err) {
+    const msg = err.message.startsWith("AI 분석 서버") || err.message.includes("찾지 못")
+      ? err.message
+      : "AI 분석 서버에 연결할 수 없어요. 잠시 후 다시 시도해 주세요.";
     resultsEl.innerHTML = `
       <div class="verdict danger">
         <div class="v-icon">😢</div>
-        <div><p class="v-title">분석 실패</p>
-        <p class="v-sub">${escapeHtml(err.message)}<br>제목을 정확히 입력하거나 아래 추천곡에서 골라보세요.</p></div>
+        <div><p class="v-title">이 곡은 아직 DB에 없어요</p>
+        <p class="v-sub">${escapeHtml(msg)}</p></div>
       </div>`;
   }
 }
@@ -500,7 +570,7 @@ function onQueryInput() {
   const q = document.getElementById("song-query").value.trim();
   const box = document.getElementById("ac-list");
   if (q.length < 1) { hideAutocomplete(); return; }
-  const matches = searchLocalDB(q).slice(0, 6);
+  const matches = searchLocalDB(q).slice(0, 8).map((s) => s.song);
   if (matches.length === 0) { hideAutocomplete(); return; }
   box.innerHTML = matches
     .map((s) => `<div class="ac-item" onmousedown="analyzeFromList(${window.SONG_DB.indexOf(s)})">
