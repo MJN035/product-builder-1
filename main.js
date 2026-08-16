@@ -256,15 +256,18 @@ async function analyzeWithAI(query) {
       data.confidence || "low"
     );
   } catch (err) {
-    const msg = err.message.startsWith("AI 분석 서버") || err.message.includes("찾지 못")
-      ? err.message
-      : "AI 분석 서버에 연결할 수 없어요. 잠시 후 다시 시도해 주세요.";
+    const known = err.message.startsWith("AI 분석 서버") || err.message.includes("찾지 못") || err.message.includes("몰렸");
+    const msg = known ? err.message : "AI 분석 서버 응답이 잠시 불안정해요. 아래 버튼으로 다시 시도해 주세요.";
+    // "AI가 모르는 곡" 같은 확정 실패가 아니면 재시도 버튼 제공
+    const retriable = !err.message.includes("찾지 못") && !err.message.startsWith("AI 분석 서버가 아직");
     resultsEl.innerHTML = `
       <div class="verdict danger">
         <div class="v-icon">😢</div>
         <div><p class="v-title">이 곡은 아직 DB에 없어요</p>
         <p class="v-sub">${escapeHtml(msg)}</p></div>
-      </div>`;
+      </div>
+      ${retriable ? `<button class="btn btn-secondary mt-12"
+        onclick="analyzeWithAI(${JSON.stringify(query).replace(/"/g, "&quot;")})">다시 시도</button>` : ""}`;
   }
 }
 
